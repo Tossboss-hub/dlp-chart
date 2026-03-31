@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DLP Chart Analyzer — Intelligent Data Insights</title>
+  <meta name="description" content="Upload CSV files and instantly get statistical analysis, trend detection, AI predictions, and beautiful chart visualizations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Background decoration ─────────────────────────────── -->
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- ── Header ─────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo-block">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">DLP<strong>Analyzer</strong></span>
+    </div>
+    <nav class="header-nav">
+      <span class="nav-badge">AI-Powered</span>
+      <a class="nav-link" href="#upload-section">Upload</a>
+      <a class="nav-link" href="#results-section">Results</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ── Hero ───────────────────────────────────────────────── -->
+<section class="hero">
+  <h1 class="hero-title">
+    Turn Raw Data into<br/>
+    <span class="gradient-text">Intelligent Insights</span>
+  </h1>
+  <p class="hero-sub">
+    Upload a CSV file → Get instant statistics, trend detection,
+    Chart.js visualizations &amp; AI-powered predictions.
+  </p>
+</section>
+
+<!-- ── Upload Card ────────────────────────────────────────── -->
+<section id="upload-section" class="container">
+  <div class="upload-card" id="dropZone">
+    <div class="upload-icon-wrap">
+      <div class="upload-icon">📂</div>
+    </div>
+    <p class="upload-title">Drag &amp; drop your CSV file here</p>
+    <p class="upload-sub">or click to browse your files</p>
+
+    <input type="file" id="fileInput" accept=".csv" hidden />
+    <button class="btn btn-outline" id="browseBtn">Choose CSV File</button>
+
+    <!-- File preview chip -->
+    <div class="file-chip" id="fileChip" style="display:none;">
+      <span class="file-chip-icon">📄</span>
+      <span id="fileName">filename.csv</span>
+      <button class="chip-remove" id="removeFile" title="Remove">✕</button>
+    </div>
+
+    <!-- Analyze button -->
+    <button class="btn btn-primary" id="analyzeBtn" disabled>
+      <span id="btnLabel">Analyze Data</span>
+      <span class="btn-arrow">→</span>
+    </button>
+  </div>
+
+  <!-- Error banner -->
+  <div class="error-banner" id="errorBanner" style="display:none;">
+    <span class="error-icon">⚠️</span>
+    <span id="errorText">Something went wrong.</span>
+    <button class="close-btn" onclick="hideError()">✕</button>
+  </div>
+</section>
+
+<!-- ── Loading ────────────────────────────────────────────── -->
+<div class="loading-overlay" id="loadingOverlay" style="display:none;">
+  <div class="loading-card">
+    <div class="spinner"></div>
+    <p class="loading-title">Analyzing your data…</p>
+    <p class="loading-sub" id="loadingStep">Reading file…</p>
+  </div>
+</div>
+
+<!-- ── Results ────────────────────────────────────────────── -->
+<section id="results-section" class="container results-section" style="display:none;">
+
+  <!-- Insights Banner -->
+  <div class="insights-banner" id="insightsBanner">
+    <div class="insights-icon">🧠</div>
+    <p id="insightsText" class="insights-text"></p>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <!-- Tabs -->
+  <div class="tabs-wrapper">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="charts">📈 Charts</button>
+      <button class="tab-btn" data-tab="stats">📊 Statistics</button>
+      <button class="tab-btn" data-tab="trends">🔍 Trends</button>
+      <button class="tab-btn" data-tab="predictions">🤖 AI Predictions</button>
+      <button class="tab-btn" data-tab="raw">{ } Raw JSON</button>
+    </div>
+
+    <!-- Charts Tab -->
+    <div class="tab-panel active" id="tab-charts">
+      <div class="chart-controls">
+        <label class="ctrl-label" for="chartTypeSelect">Chart Type:</label>
+        <select id="chartTypeSelect" class="ctrl-select">
+          <option value="line">Line</option>
+          <option value="bar">Bar</option>
+          <option value="radar">Radar</option>
+        </select>
+        <label class="ctrl-label" for="columnSelect">Column:</label>
+        <select id="columnSelect" class="ctrl-select"></select>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card chart-main">
+          <h3 class="chart-title">Column Trend</h3>
+          <canvas id="trendChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Mean Comparison</h3>
+          <canvas id="meanChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Min / Max Range</h3>
+          <canvas id="rangeChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Variance Distribution</h3>
+          <canvas id="varChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Tab -->
+    <div class="tab-panel" id="tab-stats">
+      <div class="stats-table-wrap">
+        <table class="stats-table" id="statsTable">
+          <thead>
+            <tr>
+              <th>Column</th>
+              <th>Mean</th>
+              <th>Median</th>
+              <th>Min</th>
+              <th>Max</th>
+              <th>Std Dev</th>
+              <th>Variance</th>
+            </tr>
+          </thead>
+          <tbody id="statsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Trends Tab -->
+    <div class="tab-panel" id="tab-trends">
+      <div class="trend-grid" id="trendGrid"></div>
+    </div>
+
+    <!-- Predictions Tab -->
+    <div class="tab-panel" id="tab-predictions">
+      <p class="tab-desc">
+        Values predicted using <strong>Ordinary Least Squares linear regression</strong>
+        over the row index — representing the expected <em>next row</em> for each numeric column.
+      </p>
+      <div class="pred-grid" id="predGrid"></div>
+    </div>
+
+    <!-- Raw JSON Tab -->
+    <div class="tab-panel" id="tab-raw">
+      <div class="raw-toolbar">
+        <button class="btn btn-sm" id="copyJsonBtn">📋 Copy JSON</button>
+      </div>
+      <pre class="json-block" id="jsonBlock"></pre>
+    </div>
+  </div>
+
+  <!-- Action Bar -->
+  <div class="action-bar">
+    <button class="btn btn-outline" id="downloadPdfBtn">⬇️ Download Report (PDF)</button>
+    <button class="btn btn-outline" id="downloadTxtBtn">⬇️ Download Report (TXT)</button>
+    <button class="btn btn-primary" id="resetBtn">🔄 Analyze Another File</button>
+  </div>
+
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <p>DLP Chart Analyzer · Built with Flask + Pandas + Chart.js · Hackathon Edition 🚀</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
